@@ -14,7 +14,6 @@ export default function Home() {
   const [filter, setFilter] = useState('30days')
   const [filterOpen, setFilterOpen] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
-  const searchParams = useSearchParams()
 
   const filterOptions = [
     { key: '30days', label: 'Last 30 Days' },
