@@ -22,6 +22,7 @@ export default function Home() {
         </ul>
         {/* transactions list fetch here useEffect and useState */}
       </section>
+      <Nav></Nav>
       <Footer></Footer>
     </main>
   );
