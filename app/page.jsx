@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 import { formatAmount } from '../lib/format'
 import Nav from './components/nav'
 import Footer from './components/footer'
 import { Plus, ChevronDown, Pencil, Trash2 } from 'lucide-react'
+import { Suspense } from 'react'
+import SuccessToast from './components/SuccessToast'
 
 export default function Home() {
   const [transactions, setTransactions] = useState([])
@@ -14,7 +15,6 @@ export default function Home() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const searchParams = useSearchParams()
-  const [showSuccess, setShowSuccess] = useState(false)
 
   const filterOptions = [
     { key: '30days', label: 'Last 30 Days' },
@@ -22,12 +22,6 @@ export default function Home() {
     { key: 'all', label: 'All Transactions' },
   ]
 
-  useEffect(() => {
-    if (searchParams.get('success') === 'true') {
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 3000)
-    }
-  }, [searchParams])
 
   useEffect(() => {
     fetchTransactions()
@@ -72,27 +66,10 @@ export default function Home() {
       padding: '24px 16px',
       paddingBottom: 'calc(var(--nav-height) + 24px)',
     }}>
+      <Suspense fallback={null}>
+        <SuccessToast />
+      </Suspense>
 
-      {/* Success Toast */}
-      {showSuccess && (
-        <div style={{
-          position: 'fixed',
-          top: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: '#2D6A4F',
-          color: 'white',
-          padding: '10px 22px',
-          borderRadius: '20px',
-          fontSize: '13px',
-          fontWeight: '600',
-          zIndex: 999,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          whiteSpace: 'nowrap',
-        }}>
-          ✓ Transaction saved
-        </div>
-      )}
 
       {/* Add Button */}
       <Link href="/formPage" style={{ textDecoration: 'none' }}>
