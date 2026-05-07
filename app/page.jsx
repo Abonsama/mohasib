@@ -4,13 +4,22 @@ import Link from 'next/link'
 import { supabase } from '../lib/supabase'
 import Nav from './components/nav'
 import Footer from './components/footer'
-
+import { useSearchParams } from 'next/navigation'
+import { formatAmount } from '../lib/format'
 export default function Home() {
   const [transactions, setTransactions] = useState([])
   const [filter, setFilter] = useState('30days')
   const [filterOpen, setFilterOpen] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
+  const searchParams = useSearchParams()
+  const [showSuccess, setShowSuccess] = useState(false)
 
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      setShowSuccess(true)
+      setTimeout(() => setShowSuccess(false), 3000)
+    }
+  }, [searchParams])
   const filterOptions = [
     { key: '30days', label: 'Last 30 Days' },
     { key: '24hours', label: 'Last 24 Hours' },
@@ -55,6 +64,24 @@ export default function Home() {
 
   return (
     <main style={{ paddingBottom: '80px' }}>
+    {showSuccess && (
+    <div style={{
+      position: 'fixed',
+      top: '20px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      background: '#2D6A4F',
+      color: 'white',
+      padding: '12px 24px',
+      borderRadius: '12px',
+      fontSize: '14px',
+      fontWeight: '600',
+      zIndex: 999,
+      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+    }}>
+      ✓ Transaction added successfully!
+    </div>
+  )}
 
       {/* Add Transaction Button */}
       <Link href="/formPage">
@@ -160,7 +187,7 @@ export default function Home() {
                   fontSize: '15px',
                   color: tx.is_outgoing ? '#E05C62' : '#2D6A4F'
                 }}>
-                  {tx.is_outgoing ? '−' : '+'}{tx.amount} SDG
+                  {tx.is_outgoing ? '−' : '+'}{formatAmount(tx.amount)} SDG
                 </div>
                 <div style={{ fontSize: '11px', color: '#aaa' }}>{tx.is_outgoing ? 'Outgoing' : 'Incoming'}</div>
               </div>

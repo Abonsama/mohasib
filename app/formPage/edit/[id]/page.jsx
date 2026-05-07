@@ -1,17 +1,42 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '../../lib/supabase'
-import Nav from '../components/nav'
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { supabase } from '../../../../lib/supabase'
+import Nav from '../../../components/nav'
 
-export default function Form() {
+export default function EditTransaction() {
+  const { id } = useParams()
   const router = useRouter()
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [isOutgoing, setIsOutgoing] = useState(false)
   const [date, setDate] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fetching, setFetching] = useState(true)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function fetchTransaction() {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error || !data) {
+        setError('Transaction not found')
+        setFetching(false)
+        return
+      }
+
+      setName(data.name)
+      setAmount(data.amount)
+      setIsOutgoing(data.is_outgoing)
+      setDate(data.date)
+      setFetching(false)
+    }
+    fetchTransaction()
+  }, [id])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -21,15 +46,15 @@ export default function Form() {
     setLoading(true)
     setError('')
 
-    const transactionDate = date || new Date().toISOString().split('T')[0]
-
-    const { error: err } = await supabase.from('transactions').insert([{
-      name: name.trim(),
-      amount: parseFloat(amount),
-      is_outgoing: isOutgoing,
-      date: transactionDate,
-      created_at: new Date().toISOString(),
-    }])
+    const { error: err } = await supabase
+      .from('transactions')
+      .update({
+        name: name.trim(),
+        amount: parseFloat(amount),
+        is_outgoing: isOutgoing,
+        date: date,
+      })
+      .eq('id', id)
 
     if (err) {
       setError(err.message)
@@ -40,10 +65,12 @@ export default function Form() {
     router.push('/?success=true')
   }
 
+  if (fetching) return <p style={{ padding: '16px' }}>Loading…</p>
+
   return (
     <>
       <main style={{ padding: '16px', paddingBottom: '80px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '24px' }}>New Transaction</h2>
+        <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '24px' }}>Edit Transaction</h2>
 
         {error && (
           <div style={{
@@ -63,11 +90,8 @@ export default function Form() {
 
           {/* Name */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label htmlFor="transactionName" style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>
-              Name / Beneficiary
-            </label>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Name / Beneficiary</label>
             <input
-              id="transactionName"
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
@@ -82,12 +106,9 @@ export default function Form() {
 
           {/* Amount */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label htmlFor="amount" style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>
-              Amount
-            </label>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Amount</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input
-                id="amount"
                 type="number"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
@@ -106,11 +127,8 @@ export default function Form() {
 
           {/* Date */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label htmlFor="transactionDate" style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>
-              Date <span style={{ color: '#aaa', fontWeight: '400' }}>(leave empty for today)</span>
-            </label>
+            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Date</label>
             <input
-              id="transactionDate"
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
@@ -162,7 +180,7 @@ export default function Form() {
               opacity: loading ? 0.7 : 1, marginTop: '8px',
             }}
           >
-            {loading ? 'Saving…' : 'Submit'}
+            {loading ? 'Saving…' : 'Save Changes'}
           </button>
 
         </form>
