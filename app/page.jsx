@@ -1,11 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '../lib/supabase'
+import { formatAmount } from '../lib/format'
 import Nav from './components/nav'
 import Footer from './components/footer'
-import { useSearchParams } from 'next/navigation'
-import { formatAmount } from '../lib/format'
+import { Plus, ChevronDown, Pencil, Trash2 } from 'lucide-react'
+
 export default function Home() {
   const [transactions, setTransactions] = useState([])
   const [filter, setFilter] = useState('30days')
@@ -14,17 +16,18 @@ export default function Home() {
   const searchParams = useSearchParams()
   const [showSuccess, setShowSuccess] = useState(false)
 
+  const filterOptions = [
+    { key: '30days', label: 'Last 30 Days' },
+    { key: '24hours', label: 'Last 24 Hours' },
+    { key: 'all', label: 'All Transactions' },
+  ]
+
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
     }
   }, [searchParams])
-  const filterOptions = [
-    { key: '30days', label: 'Last 30 Days' },
-    { key: '24hours', label: 'Last 24 Hours' },
-    { key: 'all', label: 'All Transactions' },
-  ]
 
   useEffect(() => {
     fetchTransactions()
@@ -63,73 +66,113 @@ export default function Home() {
   const selectedLabel = filterOptions.find(f => f.key === filter)?.label
 
   return (
-    <main style={{ paddingBottom: '80px' }}>
-    {showSuccess && (
-    <div style={{
-      position: 'fixed',
-      top: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      background: '#2D6A4F',
-      color: 'white',
-      padding: '12px 24px',
-      borderRadius: '12px',
-      fontSize: '14px',
-      fontWeight: '600',
-      zIndex: 999,
-      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+    <main style={{
+      maxWidth: '1100px',
+      margin: '0 auto',
+      padding: '24px 16px',
+      paddingBottom: 'calc(var(--nav-height) + 24px)',
     }}>
-      ✓ Transaction added successfully!
-    </div>
-  )}
 
-      {/* Add Transaction Button */}
-      <Link href="/formPage">
-        <button style={{
+      {/* Success Toast */}
+      {showSuccess && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           background: '#2D6A4F',
           color: 'white',
-          padding: '14px 28px',
-          borderRadius: '12px',
-          border: 'none',
-          fontSize: '16px',
-          width: '100%',
-          marginBottom: '24px',
-          cursor: 'pointer',
+          padding: '10px 22px',
+          borderRadius: '20px',
+          fontSize: '13px',
+          fontWeight: '600',
+          zIndex: 999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          whiteSpace: 'nowrap',
         }}>
-          + Add New Transaction
+          ✓ Transaction saved
+        </div>
+      )}
+
+      {/* Add Button */}
+      <Link href="/formPage" style={{ textDecoration: 'none' }}>
+        <button style={{
+          width: '100%',
+          padding: '13px',
+          borderRadius: 'var(--radius)',
+          border: 'none',
+          background: 'var(--green)',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          marginTop: '48px',
+          marginBottom: '28px',
+          transition: 'opacity 0.15s',
+        }}>
+          <Plus size={16} />
+          Add New Transaction
         </button>
       </Link>
 
-      {/* Header Row: Title + Filter Accordion */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', position: 'relative' }}>
-        <span style={{ fontWeight: '600', fontSize: '16px' }}>Latest Transactions</span>
+      {/* Header Row */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '14px',
+      }}>
+        <span style={{
+          fontSize: '13px',
+          fontWeight: '600',
+          color: 'var(--text-secondary)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        }}>
+          Latest Transactions
+        </span>
 
-        {/* Accordion Trigger */}
+        {/* Filter Accordion */}
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setFilterOpen(!filterOpen)}
             style={{
-              background: 'transparent',
-              border: '1px solid #ccc',
-              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
               padding: '6px 12px',
+              borderRadius: '20px',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)',
+              color: 'var(--text-secondary)',
+              fontSize: '12px',
+              fontWeight: '500',
               cursor: 'pointer',
-              fontSize: '13px',
             }}
           >
-            {selectedLabel} ▾
+            {selectedLabel}
+            <ChevronDown
+              size={13}
+              style={{
+                transform: filterOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s',
+              }}
+            />
           </button>
 
-          {/* Dropdown — overlays, does not push content */}
           {filterOpen && (
             <div style={{
               position: 'absolute',
-              top: '110%',
+              top: 'calc(100% + 6px)',
               right: 0,
-              background: 'white',
-              border: '1px solid #ddd',
-              borderRadius: '10px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
               zIndex: 100,
               minWidth: '160px',
               overflow: 'hidden',
@@ -141,12 +184,14 @@ export default function Home() {
                   style={{
                     display: 'block',
                     width: '100%',
-                    padding: '10px 16px',
-                    background: filter === option.key ? '#f0f0f0' : 'transparent',
+                    padding: '10px 14px',
+                    background: filter === option.key ? 'var(--bg-secondary)' : 'transparent',
                     border: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
                     fontSize: '13px',
+                    fontWeight: filter === option.key ? '600' : '400',
+                    color: filter === option.key ? 'var(--text-primary)' : 'var(--text-secondary)',
                   }}
                 >
                   {option.label}
@@ -159,54 +204,82 @@ export default function Home() {
 
       {/* Transactions List */}
       {transactions.length === 0 && (
-        <p style={{ color: '#888', textAlign: 'center', marginTop: '40px' }}>No transactions found.</p>
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 0',
+          color: 'var(--text-muted)',
+          fontSize: '14px',
+        }}>
+          No transactions found.
+        </div>
       )}
 
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {transactions.map(tx => (
           <li
             key={tx.id}
+            onClick={() => toggleExpand(tx.id)}
             style={{
-              background: tx.is_outgoing ? 'rgba(155, 34, 38, 0.07)' : 'rgba(45, 106, 79, 0.07)',
-              borderLeft: `4px solid ${tx.is_outgoing ? '#E05C62' : '#52B788'}`,
-              borderRadius: '10px',
+              background: tx.is_outgoing ? 'var(--red-tint)' : 'var(--green-tint)',
+              border: '1px solid var(--border)',
+              borderLeft: `3px solid ${tx.is_outgoing ? 'var(--red-light)' : 'var(--green-light)'}`,
+              borderRadius: 'var(--radius)',
               padding: '14px',
               cursor: 'pointer',
+              transition: 'background 0.15s',
             }}
-            onClick={() => toggleExpand(tx.id)}
           >
-            {/* Row */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '600', fontSize: '15px' }}>{tx.name}</div>
-                <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{tx.date}</div>
+                <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                  {tx.name}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                  {tx.date}
+                </div>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{
                   fontWeight: '700',
-                  fontSize: '15px',
-                  color: tx.is_outgoing ? '#E05C62' : '#2D6A4F'
+                  fontSize: '14px',
+                  color: tx.is_outgoing ? 'var(--red-light)' : 'var(--green)',
                 }}>
                   {tx.is_outgoing ? '−' : '+'}{formatAmount(tx.amount)} SDG
                 </div>
-                <div style={{ fontSize: '11px', color: '#aaa' }}>{tx.is_outgoing ? 'Outgoing' : 'Incoming'}</div>
+                <div style={{
+                  fontSize: '11px',
+                  color: tx.is_outgoing ? 'var(--red-light)' : 'var(--green-light)',
+                  marginTop: '2px',
+                  fontWeight: '500',
+                }}>
+                  {tx.is_outgoing ? 'Outgoing' : 'Incoming'}
+                </div>
               </div>
             </div>
 
-            {/* Expanded Actions */}
+            {/* Expanded */}
             {expandedId === tx.id && (
-              <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }} onClick={e => e.stopPropagation()}>
-                <Link href={`/formPage/edit/${tx.id}`} style={{ flex: 1 }}>
+              <div
+                style={{ marginTop: '12px', display: 'flex', gap: '8px' }}
+                onClick={e => e.stopPropagation()}
+              >
+                <Link href={`/formPage/edit/${tx.id}`} style={{ flex: 1, textDecoration: 'none' }}>
                   <button style={{
                     width: '100%',
                     padding: '8px',
                     borderRadius: '8px',
-                    border: '1px solid #ccc',
-                    background: 'white',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg)',
+                    color: 'var(--text-primary)',
                     cursor: 'pointer',
                     fontSize: '13px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
                   }}>
-                    ✏️ Edit
+                    <Pencil size={13} /> Edit
                   </button>
                 </Link>
                 <button
@@ -216,13 +289,18 @@ export default function Home() {
                     padding: '8px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: '#9B2226',
+                    background: 'var(--red)',
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '13px',
+                    fontWeight: '500',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
                   }}
                 >
-                  🗑️ Delete
+                  <Trash2 size={13} /> Delete
                 </button>
               </div>
             )}

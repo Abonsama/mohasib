@@ -1,16 +1,19 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { formatAmount } from '../../lib/format'
 import Nav from '../components/nav'
 import Footer from '../components/footer'
-import { formatAmount } from '../../lib/format'
+import { Search as SearchIcon, Pencil, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+
 export default function Search() {
   const [name, setName] = useState('')
   const [amountMin, setAmountMin] = useState('')
   const [amountMax, setAmountMax] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [type, setType] = useState('all') // 'all' | 'incoming' | 'outgoing'
+  const [type, setType] = useState('all')
   const [results, setResults] = useState([])
   const [searched, setSearched] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
@@ -46,32 +49,71 @@ export default function Search() {
     setResults(results.filter(tx => tx.id !== id))
   }
 
-  function toggleExpand(id) {
-    setExpandedId(expandedId === id ? null : id)
+  const inputStyle = {
+    padding: '10px 14px',
+    borderRadius: 'var(--radius)',
+    border: '1px solid var(--border)',
+    background: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
+    fontSize: '14px',
+    outline: 'none',
+    width: '100%',
+    transition: 'border 0.15s',
+  }
+
+  const labelStyle = {
+    fontSize: '12px',
+    fontWeight: '600',
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    marginBottom: '6px',
+    display: 'block',
   }
 
   return (
     <>
-      <main style={{ padding: '16px', paddingBottom: '80px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '20px' }}>Search</h2>
+      <main style={{
+        maxWidth: '1100px',
+        margin: '0 auto',
+        padding: '24px 16px',
+        paddingBottom: 'calc(var(--nav-height) + 24px)',
+      }}>
+        <h2 style={{
+          fontSize: '20px',
+          fontWeight: '700',
+          color: 'var(--text-primary)',
+          marginBottom: '24px',
+        }}>
+          Search
+        </h2>
 
-        <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSearch} style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          marginBottom: '28px',
+        }}>
 
           {/* Name */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Name / Beneficiary</label>
+          <div>
+            <label style={labelStyle}>Name / Beneficiary</label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Ahmed, Rent…"
-              style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none' }}
+              style={inputStyle}
             />
           </div>
 
           {/* Amount Range */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Amount Range (SDG)</label>
+          <div>
+            <label style={labelStyle}>Amount Range (SDG)</label>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <input
                 type="number"
@@ -79,60 +121,70 @@ export default function Search() {
                 onChange={e => setAmountMin(e.target.value)}
                 placeholder="Min"
                 min="0"
-                style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none', flex: 1 }}
+                style={{ ...inputStyle }}
               />
-              <span style={{ color: '#aaa' }}>—</span>
+              <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>—</span>
               <input
                 type="number"
                 value={amountMax}
                 onChange={e => setAmountMax(e.target.value)}
                 placeholder="Max"
                 min="0"
-                style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '15px', outline: 'none', flex: 1 }}
+                style={{ ...inputStyle }}
               />
             </div>
           </div>
 
           {/* Date Range */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Date Range</label>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <input
+          <div>
+            <label style={labelStyle}>Date Range</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <input
                 type="date"
                 value={dateFrom}
                 onChange={e => setDateFrom(e.target.value)}
-                style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '14px', outline: 'none', flex: 1 }}
-              />
-              <span style={{ color: '#aaa' }}>—</span>
-              <input
+                style={{ ...inputStyle }}
+            />
+            <input
                 type="date"
                 value={dateTo}
                 onChange={e => setDateTo(e.target.value)}
-                style={{ padding: '12px', borderRadius: '10px', border: '1px solid #ddd', fontSize: '14px', outline: 'none', flex: 1 }}
-              />
+                style={{ ...inputStyle }}
+            />
             </div>
           </div>
 
           {/* Type */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '600', color: '#555' }}>Type</label>
+          <div>
+            <label style={labelStyle}>Type</label>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {['all', 'incoming', 'outgoing'].map(opt => (
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'incoming', label: '↓ Incoming' },
+                { key: 'outgoing', label: '↑ Outgoing' },
+              ].map(opt => (
                 <button
-                  key={opt}
+                  key={opt.key}
                   type="button"
-                  onClick={() => setType(opt)}
+                  onClick={() => setType(opt.key)}
                   style={{
-                    flex: 1, padding: '10px', borderRadius: '10px', border: 'none',
-                    cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-                    background: type === opt
-                      ? opt === 'incoming' ? '#2D6A4F' : opt === 'outgoing' ? '#9B2226' : '#111'
-                      : '#f0f0f0',
-                    color: type === opt ? 'white' : '#666',
-                    transition: 'all 0.2s',
+                    flex: 1,
+                    padding: '10px',
+                    borderRadius: 'var(--radius)',
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    transition: 'all 0.15s',
+                    background: type === opt.key
+                      ? opt.key === 'incoming' ? '#2D6A4F'
+                        : opt.key === 'outgoing' ? '#9B2226'
+                        : '#1a1a1a'
+                      : 'var(--bg)',
+                    color: type === opt.key ? 'white' : 'var(--text-secondary)',
                   }}
                 >
-                  {opt === 'all' ? 'All' : opt === 'incoming' ? '↓ In' : '↑ Out'}
+                  {opt.label}
                 </button>
               ))}
             </div>
@@ -142,11 +194,22 @@ export default function Search() {
           <button
             type="submit"
             style={{
-              padding: '14px', borderRadius: '12px', border: 'none',
-              background: '#111', color: 'white', fontSize: '16px',
-              fontWeight: '600', cursor: 'pointer', marginTop: '4px',
+              padding: '12px',
+              borderRadius: 'var(--radius)',
+              border: 'none',
+              background: '#2D6A4F',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginTop: '4px',
             }}
           >
+            <SearchIcon size={15} />
             {loading ? 'Searching…' : 'Search'}
           </button>
 
@@ -154,60 +217,113 @@ export default function Search() {
 
         {/* Results */}
         {searched && (
-          <div style={{ marginTop: '28px' }}>
-            <span style={{ fontSize: '13px', color: '#888' }}>
+          <div>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: '600',
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
               {results.length} result{results.length !== 1 ? 's' : ''} found
             </span>
 
             {results.length === 0 && (
-              <p style={{ color: '#aaa', textAlign: 'center', marginTop: '40px' }}>No transactions found.</p>
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 0',
+                color: 'var(--text-muted)',
+                fontSize: '14px',
+              }}>
+                No transactions found.
+              </div>
             )}
 
-            <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {results.map(tx => (
                 <li
                   key={tx.id}
-                  onClick={() => toggleExpand(tx.id)}
+                  onClick={() => setExpandedId(expandedId === tx.id ? null : tx.id)}
                   style={{
-                    background: tx.is_outgoing ? 'rgba(155, 34, 38, 0.07)' : 'rgba(45, 106, 79, 0.07)',
-                    borderLeft: `4px solid ${tx.is_outgoing ? '#E05C62' : '#52B788'}`,
-                    borderRadius: '10px', padding: '14px', cursor: 'pointer',
+                    background: tx.is_outgoing ? 'var(--red-tint)' : 'var(--green-tint)',
+                    border: '1px solid var(--border)',
+                    borderLeft: `3px solid ${tx.is_outgoing ? '#E05C62' : '#52B788'}`,
+                    borderRadius: 'var(--radius)',
+                    padding: '14px',
+                    cursor: 'pointer',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontWeight: '600', fontSize: '15px' }}>{tx.name}</div>
-                      <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>{tx.date}</div>
+                      <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                        {tx.name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                        {tx.date}
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: '700', fontSize: '15px', color: tx.is_outgoing ? '#E05C62' : '#2D6A4F' }}>
-                        {tx.is_outgoing ? '−' : '+'}{formatAmount(tx.amount)} SDG 
-
+                      <div style={{
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        color: tx.is_outgoing ? '#E05C62' : '#2D6A4F',
+                      }}>
+                        {tx.is_outgoing ? '−' : '+'}{formatAmount(tx.amount)} SDG
                       </div>
-                      <div style={{ fontSize: '11px', color: '#aaa' }}>{tx.is_outgoing ? 'Outgoing' : 'Incoming'}</div>
+                      <div style={{
+                        fontSize: '11px',
+                        color: tx.is_outgoing ? '#E05C62' : '#52B788',
+                        marginTop: '2px',
+                        fontWeight: '500',
+                      }}>
+                        {tx.is_outgoing ? 'Outgoing' : 'Incoming'}
+                      </div>
                     </div>
                   </div>
 
                   {expandedId === tx.id && (
-                    <div style={{ marginTop: '12px', display: 'flex', gap: '10px' }} onClick={e => e.stopPropagation()}>
-                      <a href={`/formPage/edit/${tx.id}`} style={{ flex: 1, textDecoration: 'none' }}>
+                    <div
+                      style={{ marginTop: '12px', display: 'flex', gap: '8px' }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Link href={`/formPage/edit/${tx.id}`} style={{ flex: 1, textDecoration: 'none' }}>
                         <button style={{
-                          width: '100%', padding: '8px', borderRadius: '8px',
-                          border: '1px solid #ccc', background: 'white',
-                          cursor: 'pointer', fontSize: '13px',
+                          width: '100%',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--border)',
+                          background: 'var(--bg)',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
                         }}>
-                          ✏️ Edit
+                          <Pencil size={13} /> Edit
                         </button>
-                      </a>
+                      </Link>
                       <button
                         onClick={() => handleDelete(tx.id)}
                         style={{
-                          flex: 1, padding: '8px', borderRadius: '8px',
-                          border: 'none', background: '#9B2226',
-                          color: 'white', cursor: 'pointer', fontSize: '13px',
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: '#9B2226',
+                          color: 'white',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
                         }}
                       >
-                        🗑️ Delete
+                        <Trash2 size={13} /> Delete
                       </button>
                     </div>
                   )}
