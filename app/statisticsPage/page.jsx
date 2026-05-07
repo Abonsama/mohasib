@@ -1,7 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { formatAmount } from '../../lib/format'
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer
+} from 'recharts'
 import Nav from '../components/nav'
 import Footer from '../components/footer'
 
@@ -10,8 +14,6 @@ export default function Statistics() {
   const [stats, setStats] = useState(null)
   const [showIncome, setShowIncome] = useState(true)
   const [showOutgoing, setShowOutgoing] = useState(true)
-
-
 
   async function fetchData() {
     const from = new Date()
@@ -26,7 +28,6 @@ export default function Statistics() {
 
     if (error || !data) return
 
-    // Build chart data grouped by date
     const grouped = {}
     data.forEach(tx => {
       if (!grouped[tx.date]) grouped[tx.date] = { date: tx.date, income: 0, outgoing: 0 }
@@ -35,7 +36,6 @@ export default function Statistics() {
     })
     setChartData(Object.values(grouped))
 
-    // Stats
     const income = data.filter(tx => !tx.is_outgoing)
     const outgoing = data.filter(tx => tx.is_outgoing)
     const totalIncome = income.reduce((sum, tx) => sum + Number(tx.amount), 0)
@@ -54,96 +54,214 @@ export default function Statistics() {
     })
   }
 
-    useEffect(() => {
+  useEffect(() => {
     fetchData()
   }, [])
 
+  const statRows = stats ? [
+    { label: 'Total Income', value: `${formatAmount(stats.totalIncome)} SDG`, color: '#2D6A4F' },
+    { label: 'Total Expenses', value: `${formatAmount(stats.totalExpenses)} SDG`, color: '#9B2226' },
+    {
+      label: 'Net Balance',
+      value: `${formatAmount(stats.netBalance)} SDG`,
+      color: stats.netBalance >= 0 ? '#2D6A4F' : '#9B2226'
+    },
+    { label: 'Transactions In', value: stats.incomeCount, color: '#2D6A4F' },
+    { label: 'Transactions Out', value: stats.expenseCount, color: '#9B2226' },
+    {
+      label: 'Biggest Income',
+      value: stats.biggestIncome
+        ? `${stats.biggestIncome.name} — ${formatAmount(stats.biggestIncome.amount)} SDG`
+        : '—',
+      color: '#2D6A4F'
+    },
+    {
+      label: 'Biggest Expense',
+      value: stats.biggestExpense
+        ? `${stats.biggestExpense.name} — ${formatAmount(stats.biggestExpense.amount)} SDG`
+        : '—',
+      color: '#9B2226'
+    },
+  ] : []
+
   return (
-    <main style={{ paddingBottom: '80px', padding: '16px 16px 80px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '20px' }}>Statistics — Last 30 Days</h2>
+    <>
+      <main style={{
+        maxWidth: '1100px',
+        margin: '0 auto',
+        padding: '24px 16px',
+        paddingBottom: 'calc(var(--nav-height) + 24px)',
+      }}>
 
-      {/* Chart */}
-      <div style={{ width: '100%', height: 260 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#52B788" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#52B788" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="colorOutgoing" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#E05C62" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#E05C62" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
-            <YAxis tick={{ fontSize: 10 }} />
-            <Tooltip formatter={(value, name) => [`${value} SDG`, name === 'income' ? 'Income' : 'Outgoing']} />
-            {showIncome && (
-              <Area type="monotone" dataKey="income" stroke="#52B788" strokeWidth={2} fill="url(#colorIncome)" />
-            )}
-            {showOutgoing && (
-              <Area type="monotone" dataKey="outgoing" stroke="#E05C62" strokeWidth={2} fill="url(#colorOutgoing)" />
-            )}
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+        <h2 style={{
+          fontSize: '20px',
+          fontWeight: '700',
+          color: 'var(--text-primary)',
+          marginBottom: '24px',
+        }}>
+          Statistics — Last 30 Days
+        </h2>
 
-      {/* Legend toggles */}
-      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '12px', marginBottom: '28px' }}>
-        <button
-          onClick={() => setShowIncome(!showIncome)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '6px 14px', borderRadius: '20px', border: 'none',
-            background: showIncome ? 'rgba(82, 183, 136, 0.15)' : '#f0f0f0',
-            color: showIncome ? '#2D6A4F' : '#aaa',
-            cursor: 'pointer', fontSize: '13px', fontWeight: '500',
-          }}
-        >
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#52B788', display: 'inline-block' }} />
-          Income
-        </button>
-        <button
-          onClick={() => setShowOutgoing(!showOutgoing)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '6px 14px', borderRadius: '20px', border: 'none',
-            background: showOutgoing ? 'rgba(224, 92, 98, 0.15)' : '#f0f0f0',
-            color: showOutgoing ? '#9B2226' : '#aaa',
-            cursor: 'pointer', fontSize: '13px', fontWeight: '500',
-          }}
-        >
-          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#E05C62', display: 'inline-block' }} />
-          Outgoing
-        </button>
-      </div>
+        {/* Chart Card */}
+        <div style={{
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          padding: '20px',
+          marginBottom: '12px',
+        }}>
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#52B788" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#52B788" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorOutgoing" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#E05C62" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="#E05C62" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                tickFormatter={d => d.slice(5)}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)',
+                }}
+                formatter={(value, name) => [
+                  `${formatAmount(value)} SDG`,
+                  name === 'income' ? 'Income' : 'Outgoing'
+                ]}
+              />
+              {showIncome && (
+                <Area
+                  type="monotone"
+                  dataKey="income"
+                  stroke="#52B788"
+                  strokeWidth={2}
+                  fill="url(#colorIncome)"
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#52B788' }}
+                />
+              )}
+              {showOutgoing && (
+                <Area
+                  type="monotone"
+                  dataKey="outgoing"
+                  stroke="#E05C62"
+                  strokeWidth={2}
+                  fill="url(#colorOutgoing)"
+                  dot={false}
+                  activeDot={{ r: 4, fill: '#E05C62' }}
+                />
+              )}
+            </AreaChart>
+          </ResponsiveContainer>
 
-      {/* Stats Table */}
-      {stats && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <tbody>
+          {/* Legend Toggles */}
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            justifyContent: 'center',
+            marginTop: '16px',
+          }}>
             {[
-              { label: 'Total Income', value: `${stats.totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SDG`, color: '#2D6A4F' },
-              { label: 'Total Expenses', value: `${stats.totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SDG`, color: '#9B2226' },
-              { label: 'Net Balance', value: `${stats.netBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SDG`, color: stats.netBalance >= 0 ? '#2D6A4F' : '#9B2226' },
-              { label: 'Transactions In', value: stats.incomeCount },
-              { label: 'Transactions Out', value: stats.expenseCount },
-              { label: 'Biggest Income', value: stats.biggestIncome ? `${stats.biggestIncome.name} — ${Number(stats.biggestIncome.amount).toLocaleString()} SDG` : '—', color: '#2D6A4F' },
-              { label: 'Biggest Expense', value: stats.biggestExpense ? `${stats.biggestExpense.name} — ${Number(stats.biggestExpense.amount).toLocaleString()} SDG` : '—', color: '#9B2226' },
-            ].map(({ label, value, color }) => (
-              <tr key={label} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '12px 8px', color: '#666', fontWeight: '500' }}>{label}</td>
-                <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', color: color || '#111' }}>{value}</td>
-              </tr>
+              { key: 'income', label: 'Income', color: '#52B788', active: showIncome, toggle: () => setShowIncome(!showIncome) },
+              { key: 'outgoing', label: 'Outgoing', color: '#E05C62', active: showOutgoing, toggle: () => setShowOutgoing(!showOutgoing) },
+            ].map(item => (
+              <button
+                key={item.key}
+                onClick={item.toggle}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '7px',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  border: `1px solid ${item.active ? item.color : 'var(--border)'}`,
+                  background: item.active ? `${item.color}18` : 'transparent',
+                  color: item.active ? item.color : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: item.active ? item.color : 'var(--border)',
+                  display: 'inline-block',
+                  transition: 'background 0.2s',
+                }} />
+                {item.label}
+              </button>
             ))}
-          </tbody>
-        </table>
-      )}
+          </div>
+        </div>
 
-      <Footer />
+        {/* Stats Table */}
+        {stats && (
+          <div style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            overflow: 'hidden',
+            marginTop: '16px',
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {statRows.map(({ label, value, color }, i) => (
+                  <tr
+                    key={label}
+                    style={{
+                      borderBottom: i < statRows.length - 1 ? '1px solid var(--border)' : 'none',
+                    }}
+                  >
+                    <td style={{
+                      padding: '14px 16px',
+                      fontSize: '13px',
+                      color: 'var(--text-secondary)',
+                      fontWeight: '500',
+                    }}>
+                      {label}
+                    </td>
+                    <td style={{
+                      padding: '14px 16px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      color: color || 'var(--text-primary)',
+                      textAlign: 'right',
+                    }}>
+                      {value}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <Footer />
+      </main>
       <Nav />
-    </main>
+    </>
   )
 }
