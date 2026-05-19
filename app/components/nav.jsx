@@ -1,10 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, BarChart2 } from 'lucide-react'
+import { Home, Search, BarChart2, LogOut } from 'lucide-react'
+import { useAuth } from '@/lib/AuthContext'
 
 export default function Nav() {
   const pathname = usePathname()
+  const { signOut } = useAuth()
 
   const links = [
     { href: '/', label: 'Home', icon: Home },
@@ -54,6 +56,29 @@ export default function Nav() {
           </Link>
         )
       })}
+      
+      {/* Logout button */}
+      <button
+        onClick={signOut}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '8px 24px',
+          borderRadius: '10px',
+          background: 'transparent',
+          border: 'none',
+          color: 'var(--text-muted)',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+        }}
+      >
+        <LogOut size={20} strokeWidth={1.8} />
+        <span style={{ fontSize: '11px', fontWeight: '400' }}>
+          Logout
+        </span>
+      </button>
     </nav>
   )
 }
